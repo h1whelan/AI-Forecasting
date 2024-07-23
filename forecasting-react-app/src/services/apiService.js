@@ -12,7 +12,7 @@ const axiosInstance = axios.create({
 export const submitResponse = async (responseData) => {
   try {
     console.log('Sending data to server:', JSON.stringify(responseData));
-    const response = await axiosInstance.post('/api/response', responseData);
+    const response = await axiosInstance.post('/response', responseData);
     console.log('Response from server:', response.data);
     return response.data;
   } catch (error) {
