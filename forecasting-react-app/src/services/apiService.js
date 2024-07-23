@@ -27,7 +27,7 @@ export const submitResponse = async (responseData) => {
 
 export const getStudyData = async () => {
   try {
-    const response = await axiosInstance.get('/api/study-data');
+    const response = await axiosInstance.get('/study-data');
     return response.data;
   } catch (error) {
     console.error('Error fetching study data:', error);
