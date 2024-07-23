@@ -37,6 +37,28 @@ const Response = mongoose.model('Response', {
   createdAt: { type: Date, default: Date.now }
 });
 
+const Demographic = mongoose.model('Demographic', {
+  userId: String,
+  age: String,
+  gender: String,
+  education: String,
+  occupation: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+app.post('/api/demographics', async (req, res) => {
+  console.log('Received demographics:', req.body);
+  const { userId, age, gender, education, occupation } = req.body;
+  const demographic = new Demographic({ userId, age, gender, education, occupation });
+  try {
+    await demographic.save();
+    res.status(201).json(demographic);
+  } catch (error) {
+    console.error('Error saving demographics:', error);
+    res.status(500).json({ message: 'Error saving demographics', error: error.toString() });
+  }
+});
+
 app.post('/api/response', async (req, res) => {
   console.log('Received request body:', req.body);
   const { userId, group, question, prediction, confidence, timeTaken, baseRate } = req.body;

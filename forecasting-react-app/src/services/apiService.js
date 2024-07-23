@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = '/api';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5000/api';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -21,6 +23,17 @@ export const submitResponse = async (responseData) => {
       console.error('Response status:', error.response.status);
       console.error('Response headers:', error.response.headers);
     }
+    throw error;
+  }
+};
+
+export const submitDemographics = async (demographicData) => {
+  try {
+    const response = await axiosInstance.post('/demographics', demographicData);
+    console.log('Demographics submitted:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting demographics:', error);
     throw error;
   }
 };
