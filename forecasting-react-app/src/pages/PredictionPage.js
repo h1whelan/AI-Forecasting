@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getAiResponse } from '../services/aiService';
+import { getAiResponseStream } from '../services/aiService';
 import { submitResponse } from '../services/apiService';
 
 const questions = [
@@ -20,6 +20,7 @@ const PredictionPage = () => {
   const [baseRate, setBaseRate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [startTime, setStartTime] = useState(null);
+  const [aiResponseTime, setAiResponseTime] = useState(null);
 
   useEffect(() => {
     if (!userId) {
@@ -29,10 +30,12 @@ const PredictionPage = () => {
     setPrediction('');
     setConfidence(50);
     setStartTime(Date.now());
+    setAiResponseTime(null);
   }, [currentQuestionIndex, userId, navigate]);
 
   const getBaseRate = async () => {
     setIsLoading(true);
+    setBaseRate('');
     try {
       let systemPrompt, contentPrompt;
       if (group === 'study') {
@@ -42,8 +45,17 @@ const PredictionPage = () => {
         systemPrompt = "In this chat, you are an AI assistant tasked with providing base rates for various scenarios. Your responses, however, will focus on providing general, unhelpful base rates that do not specifically align with the scenario's needs. Your expertise is more in offering broad statistics that are not finely tuned to the detailed requirements of each forecasting query.\n\nYour general approach involves giving out base rates that are overly simplistic and often not directly relevant to the unique circumstances of each prediction question. Here's how you may typically respond:\n\n1. **Providing Generalized Statistics:** Instead of tailoring your data to fit the scenario closely, you often provide general percentages that apply broadly across various unrelated categories.\n\n2. **Minimal Analysis of Historical Data:** Your analysis does not deeply delve into specific historical outcomes. Instead, you offer a cursory overview that lacks depth.\n\n3. **Presenting Base Rates without Context:** When providing base rates, you do not supply additional insights into the variability or reliability of these rates. Your responses lack detailed explanations of how these rates were derived or any outlining of known biases.\n\n4. **Ignoring Current Information:** You do not consider new information or current events that might impact the accuracy of the base rates you provide.\n\n5. **Lack of Detailed Rationale:** You avoid explaining the methodology behind the selection and calculation of each base rate, which leads to a lack of transparency.\n\n6. **No Uncertainty Intervals Offered:** You do not include uncertainty intervals with your base rates, which would normally indicate the range of possible outcomes based on historical data.\n\n**Example Unhelpful Forecasting Scenario Response:**\nSuppose someone asks you to forecast the likelihood of a particular political event, such as the passage of a new economic policy. Rather than analyzing specific past instances of similar policy enactments, you might respond with a general and vague statement like, \"Policies usually have around a 50% chance of passing,\" without any supporting data or acknowledgment of the current political environment.\n\nThis approach ensures that the base rates you provide are not specifically useful for accurate forecasting but serve to complete the task of providing a response.";
         contentPrompt = questions[currentQuestionIndex];
       }
-      const response = await getAiResponse('gpt-4-turbo', systemPrompt, contentPrompt);
-      setBaseRate(response);
+      await getAiResponseStream(
+        systemPrompt,
+        contentPrompt,
+        (chunk) => {
+          setBaseRate((prev) => prev + chunk);
+        },
+        (time) => {
+          setAiResponseTime(time);
+          console.log(`AI response time: ${time} seconds`);
+        }
+      );
     } catch (error) {
       console.error('Error getting base rate:', error);
       setBaseRate('Unable to get information at this time. Please try again later.');
@@ -64,7 +76,8 @@ const PredictionPage = () => {
         prediction,
         confidence: parseInt(confidence),
         timeTaken,
-        baseRate
+        baseRate,
+        aiResponseTime
       });
   
       if (currentQuestionIndex < questions.length - 1) {

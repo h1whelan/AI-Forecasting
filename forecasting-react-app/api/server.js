@@ -120,6 +120,47 @@ app.get('/api/study-data', async (req, res) => {
   }
 });
 
+const OpenAI = require('openai');
+
+const openai = new OpenAI({
+  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+});
+
+app.post('/api/ai-stream', async (req, res) => {
+  const { systemPrompt, contentPrompt } = req.body;
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  try {
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: contentPrompt }
+      ],
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
+    }
+
+    res.write('data: [DONE]\n\n');
+  } catch (error) {
+    console.error('Error in AI stream:', error);
+    res.write(`data: ${JSON.stringify({ error: 'An error occurred' })}\n\n`);
+  } finally {
+    res.end();
+  }
+});
+
 const port = process.env.BACKENDPORT || 5000;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
