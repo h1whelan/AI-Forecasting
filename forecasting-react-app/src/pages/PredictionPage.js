@@ -21,6 +21,11 @@ const PredictionPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [aiResponseTime, setAiResponseTime] = useState(null);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [userInput, setUserInput] = useState('');
+  const [suggestedQuestions, setSuggestedQuestions] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [questionCount, setQuestionCount] = useState(0);
 
   useEffect(() => {
     if (!userId) {
@@ -31,7 +36,39 @@ const PredictionPage = () => {
     setConfidence(50);
     setStartTime(Date.now());
     setAiResponseTime(null);
-  }, [currentQuestionIndex, userId, navigate]);
+    setChatHistory([]);
+    setSuggestedQuestions([]);
+    setQuestionCount(0);
+    getAiSuggestedQuestions();
+  }, [currentQuestionIndex, userId, navigate, group]);
+
+  const getAiSuggestedQuestions = async () => {
+    setIsLoadingSuggestions(true);
+    try {
+      const systemPrompt = group === 'study' 
+        ? "You are an AI assistant helping with a forecasting study. Suggest 3 insightful questions that could help the user make a more accurate prediction. These questions should be specific to the given forecasting scenario and encourage critical thinking. Separate each question with '|||'."
+        : "You are an AI assistant helping with a general survey. Suggest 3 broad, general questions about the topic that don't provide specific insights for prediction. Separate each question with '|||'.";
+      
+      const contentPrompt = `Based on this forecasting question: "${questions[currentQuestionIndex]}", suggest 3 questions.`;
+      
+      let fullResponse = '';
+      await getAiResponseStream(
+        systemPrompt,
+        contentPrompt,
+        (chunk) => {
+          fullResponse += chunk;
+        },
+        () => {
+          const suggestions = fullResponse.split('|||').map(q => q.trim()).filter(q => q);
+          setSuggestedQuestions(suggestions);
+          setIsLoadingSuggestions(false);
+        }
+      );
+    } catch (error) {
+      console.error('Error getting AI suggested questions:', error);
+      setIsLoadingSuggestions(false);
+    }
+  };
 
   const getBaseRate = async () => {
     setIsLoading(true);
@@ -91,6 +128,105 @@ const PredictionPage = () => {
     }
   };
 
+  const handleChatSubmit = async (e) => {
+    let input;
+    if (typeof e === 'string') {
+      input = e;
+    } else {
+      e.preventDefault();
+      input = userInput.trim();
+    }
+  
+    if (!input) return;
+  
+    if (questionCount >= 10) {
+      alert("You've reached the maximum number of questions for this prediction. Please make your prediction.");
+      return;
+    }
+  
+    const newUserMessage = { role: 'user', content: input };
+    setChatHistory(prev => [...prev, newUserMessage]);
+    setUserInput('');
+    setQuestionCount(prev => prev + 1);
+  
+    setIsLoading(true);
+    try {
+      let aiResponse = '';
+      await getAiResponseStream(
+        group === 'study'
+          ? "You are a helpful AI assistant providing information for a forecasting study. Provide accurate and relevant information to help with predictions."
+          : "You are a general AI assistant. Provide broad, general information without specific insights for predictions.",
+        input,
+        (chunk) => {
+          aiResponse += chunk;
+          setChatHistory(prev => {
+            const newHistory = [...prev];
+            if (newHistory[newHistory.length - 1].role === 'assistant') {
+              newHistory[newHistory.length - 1].content = aiResponse;
+            } else {
+              newHistory.push({ role: 'assistant', content: aiResponse });
+            }
+            return newHistory;
+          });
+        },
+        (time) => {
+          setAiResponseTime(time);
+          console.log(`AI response time: ${time} seconds`);
+          setIsLoading(false);
+          updateSuggestedQuestions(aiResponse);
+        }
+      );
+    } catch (error) {
+      console.error('Error in chat:', error);
+      setChatHistory(prev => [
+        ...prev,
+        { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }
+      ]);
+      setIsLoading(false);
+    }
+  };
+
+  const handleSuggestedQuestionClick = (question) => {
+    if (questionCount >= 10) {
+      alert("You've reached the maximum number of questions for this prediction. Please make your prediction.");
+      return;
+    }
+    setUserInput(question);
+    handleChatSubmit(question);
+  };
+
+  const updateSuggestedQuestions = async (lastResponse) => {
+    setIsLoadingSuggestions(true);
+    try {
+      const conversationContext = chatHistory
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join('\n') + `\nassistant: ${lastResponse}`;
+  
+      const systemPrompt = group === 'study' 
+        ? "You are an AI assistant helping with a forecasting study. Based on the conversation context, suggest 3 insightful follow-up questions that could help the user make a more accurate prediction. These questions should be specific to the given forecasting scenario and encourage critical thinking. Separate each question with '|||'."
+        : "You are an AI assistant helping with a general survey. Based on the conversation context, suggest 3 broad, general follow-up questions about the topic that don't provide specific insights for prediction. Separate each question with '|||'.";
+      
+      const contentPrompt = `Given this conversation context:\n${conversationContext}\n\nSuggest 3 follow-up questions.`;
+      
+      let fullResponse = '';
+      await getAiResponseStream(
+        systemPrompt,
+        contentPrompt,
+        (chunk) => {
+          fullResponse += chunk;
+        },
+        () => {
+          const suggestions = fullResponse.split('|||').map(q => q.trim()).filter(q => q);
+          setSuggestedQuestions(suggestions);
+          setIsLoadingSuggestions(false);
+        }
+      );
+    } catch (error) {
+      console.error('Error updating suggested questions:', error);
+      setIsLoadingSuggestions(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Forecasting Study: Question {currentQuestionIndex + 1}/{questions.length}</h1>
@@ -99,21 +235,58 @@ const PredictionPage = () => {
           <h2 className="text-xl font-semibold">{questions[currentQuestionIndex]}</h2>
         </div>
         <div className="mb-4">
-          <button 
-            onClick={getBaseRate} 
-            disabled={isLoading} 
-            type="button"
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            {isLoading ? 'Loading...' : 'Get Information'}
-          </button>
-        </div>
-        {baseRate && (
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold">Additional Information:</h2>
-            <p>{baseRate}</p>
+          <h3 className="text-lg font-semibold">Chat with AI Assistant</h3>
+          <div className="border p-4 mb-4 h-64 overflow-y-auto">
+            {chatHistory.map((message, index) => (
+              <div key={index} className={`mb-2 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
+                <span className={`inline-block p-2 rounded ${message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                  {message.content}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Suggested Questions:</h3>
+          {isLoadingSuggestions ? (
+            <p>Loading suggestions...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {suggestedQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  className="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-2 px-4 rounded-full text-sm"
+                  onClick={() => handleSuggestedQuestionClick(question)}
+                  type="button"
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mb-4">
+          <form onSubmit={handleChatSubmit} className="flex">
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              className="flex-grow border rounded-l px-4 py-2"
+              placeholder="Ask a question..."
+            />
+            <button
+              type="button"
+              onClick={handleChatSubmit}
+              disabled={isLoading || questionCount >= 10}
+              className="bg-blue-500 text-white px-4 py-2 rounded-r"
+            >
+              Send
+            </button>
+          </form>
+          <p className="text-sm text-gray-600 mt-2">
+            Questions remaining: {10 - questionCount}
+          </p>
+        </div>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Your Prediction:</label>
           <div>
