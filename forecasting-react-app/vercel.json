@@ -15,4 +15,5 @@
       "api/server.js": {
         "maxDuration": 60
       }
+    }
   }
