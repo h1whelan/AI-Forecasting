@@ -149,8 +149,11 @@ const PredictionPage = () => {
       alert("You've reached the maximum number of questions for this prediction. Please make your prediction.");
       return;
     }
-
+  
     const model = 'gpt-4-turbo'
+  
+    const currentQuestion = questions[currentQuestionIndex];
+    const fullInput = `Question: ${currentQuestion}\nUser: ${input}`;
   
     const newUserMessage = { role: 'user', content: input };
     setChatHistory(prev => [...prev, newUserMessage]);
@@ -162,7 +165,7 @@ const PredictionPage = () => {
       let aiResponse = '';
       await getAiResponseStream(
         group === 'study' ? prompts.studyGroupChat : prompts.controlGroupChat,
-        input,
+        fullInput,
         model,
         (chunk) => {
           aiResponse += chunk;
