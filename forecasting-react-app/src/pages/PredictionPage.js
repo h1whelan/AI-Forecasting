@@ -28,21 +28,6 @@ const PredictionPage = () => {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
 
-  useEffect(() => {
-    if (!userId) {
-      navigate('/');
-    }
-    setBaseRate('');
-    setPrediction('');
-    setConfidence(50);
-    setStartTime(Date.now());
-    setAiResponseTime(null);
-    setChatHistory([]);
-    setSuggestedQuestions([]);
-    setQuestionCount(0);
-    getAiSuggestedQuestions();
-  }, [currentQuestionIndex, userId, navigate, group, getAiSuggestedQuestions]);
-
   const getAiSuggestedQuestions = useCallback(async () => {
     setIsLoadingSuggestions(true);
     try {
@@ -73,6 +58,21 @@ const PredictionPage = () => {
       setIsLoadingSuggestions(false);
     }
   }, [group, currentQuestionIndex]);
+
+  useEffect(() => {
+    if (!userId) {
+      navigate('/');
+    }
+    setBaseRate('');
+    setPrediction('');
+    setConfidence(50);
+    setStartTime(Date.now());
+    setAiResponseTime(null);
+    setChatHistory([]);
+    setSuggestedQuestions([]);
+    setQuestionCount(0);
+    getAiSuggestedQuestions();
+  }, [currentQuestionIndex, userId, navigate, group, getAiSuggestedQuestions]);
 
   // Commented out for now as we're focusing on turn-based chat instead of single base rate return
   // May be used in the future for single base rate functionality
