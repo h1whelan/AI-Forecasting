@@ -1,6 +1,6 @@
 const API_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api';
 
-export const getAiResponseStream = async (systemPrompt, contentPrompt, onChunk, onComplete) => {
+export const getAiResponseStream = async (systemPrompt, contentPrompt, model, onChunk, onComplete) => {
   const startTime = Date.now();
   try {
     const response = await fetch(`${API_URL}/ai-stream`, {
@@ -8,7 +8,7 @@ export const getAiResponseStream = async (systemPrompt, contentPrompt, onChunk, 
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ systemPrompt, contentPrompt }),
+      body: JSON.stringify({ systemPrompt, contentPrompt, model }),
     });
 
     const reader = response.body.getReader();

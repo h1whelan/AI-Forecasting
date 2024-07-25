@@ -127,7 +127,7 @@ const openai = new OpenAI({
 });
 
 app.post('/api/ai-stream', async (req, res) => {
-  const { systemPrompt, contentPrompt } = req.body;
+  const { systemPrompt, contentPrompt, model } = req.body;
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -137,7 +137,7 @@ app.post('/api/ai-stream', async (req, res) => {
 
   try {
     const stream = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: model || 'gpt-4-turbo',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: contentPrompt }
