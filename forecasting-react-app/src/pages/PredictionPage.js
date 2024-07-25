@@ -46,10 +46,10 @@ const PredictionPage = () => {
     setIsLoadingSuggestions(true);
     try {
       const systemPrompt = group === 'study' 
-        ? "You are an AI assistant helping with a forecasting study. Suggest 3 insightful questions that could help the user make a more accurate prediction. These questions should be specific to the given forecasting scenario and encourage critical thinking. Separate each question with '|||'."
-        : "You are an AI assistant helping with a general survey. Suggest 3 broad, general questions about the topic that don't provide specific insights for prediction. Separate each question with '|||'.";
+        ? "In this chat, you are an AI assistant responsible for guiding users towards forming effective and precise queries aimed at obtaining accurate base rates for their predictions. Your goal is to to transform a broad question into focused, scenario-specific questions that yield highly relevant base rates. Here are three suggested questions: Can you provide a base rate for this scenario that considers historical data specifically relevant to my situation? ||| How has recent information or current events impacted the base rate for this type of scenario? ||| What is the methodology behind this base rate, including any known biases or assumptions, and can you provide uncertainty intervals to indicate the range of possible outcomes?. Do not number your questions, and separate them with |||"
+        : "In this chat, you are an AI assistant responsible for guiding users towards forming broad, general queries aimed at obtaining base rates. Your goal is to help users ask questions that yield generalized and often not specifically useful base rates. Here are three suggested questions: What is the general success rate for similar scenarios? ||| Can you provide a base rate for this type of event in general? ||| What are the overall statistics for outcomes in broad categories like this one? Do not number your questions, and separate them with |||";
       
-      const contentPrompt = `Based on this forecasting question: "${questions[currentQuestionIndex]}", suggest 3 questions.`;
+      const contentPrompt = `Here is the forecasting question: "${questions[currentQuestionIndex]}".`;
       
       let fullResponse = '';
       await getAiResponseStream(
