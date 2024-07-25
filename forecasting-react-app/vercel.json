@@ -11,9 +11,7 @@
       { "src": "^/manifest.json", "dest": "/manifest.json" },
       { "src": "^/(.*)", "dest": "/index.html" }
     ],
-    "functions": {
-      "api/server.js": {
-        "maxDuration": 60
-      }
+    "env": {
+      "VERCEL_FUNCTIONS_TIMEOUT": "60"
     }
-  }
+}
