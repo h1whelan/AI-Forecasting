@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { marked } from 'marked';
 import { getAiResponseStream } from '../services/aiService';
 import { submitResponse } from '../services/apiService';
 import { prompts } from '../lib/prompts';
@@ -253,7 +254,11 @@ const PredictionPage = () => {
             {chatHistory.map((message, index) => (
               <div key={index} className={`mb-2 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                 <span className={`inline-block p-2 rounded ${message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                  {message.content}
+                  {message.role === 'assistant' ? (
+                    <div dangerouslySetInnerHTML={{ __html: marked(message.content) }} />
+                  ) : (
+                    message.content
+                  )}
                 </span>
               </div>
             ))}
