@@ -37,7 +37,7 @@ const PredictionPage = () => {
 
       const contentPrompt = `Here is the forecasting question: "${questions[currentQuestionIndex]}".`;
 
-      const model = 'GPT-4o'
+      const model = 'gpt-4o'
       
       let fullResponse = '';
       await getAiResponseStream(
@@ -150,7 +150,7 @@ const PredictionPage = () => {
       return;
     }
 
-    const model = 'GPT-4-Turbo'
+    const model = 'gpt-4-turbo'
   
     const newUserMessage = { role: 'user', content: input };
     setChatHistory(prev => [...prev, newUserMessage]);
@@ -215,7 +215,7 @@ const PredictionPage = () => {
 
       const contentPrompt = `Given this conversation context:\n${conversationContext}\n\nSuggest 3 follow-up questions.`;
       
-      const model = 'GPT-4o'
+      const model = 'gpt-4o'
       
       let fullResponse = '';
       await getAiResponseStream(
