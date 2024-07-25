@@ -41,7 +41,7 @@ const PredictionPage = () => {
     setSuggestedQuestions([]);
     setQuestionCount(0);
     getAiSuggestedQuestions();
-  }, [currentQuestionIndex, userId, navigate, group]);
+  }, [currentQuestionIndex, userId, navigate, group, getAiSuggestedQuestions]);
 
   const getAiSuggestedQuestions = useCallback(async () => {
     setIsLoadingSuggestions(true);
@@ -72,7 +72,7 @@ const PredictionPage = () => {
       console.error('Error getting AI suggested questions:', error);
       setIsLoadingSuggestions(false);
     }
-  }, [group, currentQuestionIndex, questions]);
+  }, [group, currentQuestionIndex]);
 
   // Commented out for now as we're focusing on turn-based chat instead of single base rate return
   // May be used in the future for single base rate functionality
