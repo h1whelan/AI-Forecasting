@@ -42,7 +42,7 @@ const PredictionPage = () => {
     getAiSuggestedQuestions();
   }, [currentQuestionIndex, userId, navigate, group]);
 
-  const getAiSuggestedQuestions = async () => {
+  const getAiSuggestedQuestions = useCallback(async () => {
     setIsLoadingSuggestions(true);
     try {
       const systemPrompt = group === 'study' 
@@ -68,7 +68,7 @@ const PredictionPage = () => {
       console.error('Error getting AI suggested questions:', error);
       setIsLoadingSuggestions(false);
     }
-  };
+  }, [group, currentQuestionIndex, questions]);
 
   const getBaseRate = async () => {
     setIsLoading(true);
@@ -203,8 +203,8 @@ const PredictionPage = () => {
         .join('\n') + `\nassistant: ${lastResponse}`;
   
       const systemPrompt = group === 'study' 
-        ? "You are an AI assistant responsible for guiding users towards forming effective and precise queries aimed at obtaining accurate base rates for their predictions. Your goal is to transform broad questions into focused, scenario-specific questions that yield highly relevant base rates. Here's how you will approach this task: 1. Context-Specific Questions: Develop questions that are tailored to the unique scenario and context the user is dealing with. These should consider the specific details and relevant factors affecting the prediction. 2. Historical Data Emphasis: Guide the user to ask for historical data that closely aligns with their scenario, ensuring that any provided base rate is backed by substantial historical analysis. 3. Inclusion of Current Information: Ensure that questions prompt the consideration of recent events or current trends that may influence the base rate. 4. Detailed Methodology Explanation: Encourage the user to request an understanding of how the base rate is calculated, including any relevant biases or assumptions that may affect its accuracy. 5. Request for Uncertainty Intervals: Suggest that users ask for uncertainty intervals along with the base rate, to better understand the range of possible outcomes. Based on the conversation context, suggest 3 insightful follow-up questions. Separate each question with '|||'."
-        : "In this chat, you are an AI assistant responsible for guiding users towards forming broad, general queries aimed at obtaining base rates. Your goal is to help users ask questions that yield generalized and often not specifically useful base rates. Here are three suggested questions: 'What is the general success rate for similar scenarios?' ||| 'Can you provide a base rate for this type of event in general?' ||| 'What are the overall statistics for outcomes in broad categories like this one?' Separate each question with '|||'.";
+        ? "You are an AI assistant responsible for guiding users towards forming effective and precise queries aimed at obtaining accurate base rates for their predictions. Your goal is to transform broad questions into focused, scenario-specific questions that yield highly relevant base rates. Here's how you will approach this task: Context-Specific Questions: Develop questions that are tailored to the unique scenario and context the user is dealing with. These should consider the specific details and relevant factors affecting the prediction. Historical Data Emphasis: Guide the user to ask for historical data that closely aligns with their scenario, ensuring that any provided base rate is backed by substantial historical analysis. Inclusion of Current Information: Ensure that questions prompt the consideration of recent events or current trends that may influence the base rate. Detailed Methodology Explanation: Encourage the user to request an understanding of how the base rate is calculated, including any relevant biases or assumptions that may affect its accuracy. Request for Uncertainty Intervals: Suggest that users ask for uncertainty intervals along with the base rate, to better understand the range of possible outcomes. Based on the conversation context, suggest 3 insightful follow-up questions. Separate each question with '|||'."
+        : "In this chat, you are an AI assistant responsible for guiding users towards forming broad, general queries aimed at obtaining base rates. Your goal is to help users ask questions that yield generalized and often not specifically useful base rates. Here are three suggested questions: What is the general success rate for similar scenarios? ||| Can you provide a base rate for this type of event in general? ||| What are the overall statistics for outcomes in broad categories like this one? Separate each question with '|||'.";
       
       const contentPrompt = `Given this conversation context:\n${conversationContext}\n\nSuggest 3 follow-up questions.`;
       
