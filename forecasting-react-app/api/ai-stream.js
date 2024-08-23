@@ -5,18 +5,18 @@ export const config = {
 };
 
 const openai = new OpenAI({
-  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY, // Make sure this is set in your Vercel environment variables
 });
 
-export default async function handler(req) {
-  if (req.method !== 'POST') {
+export default async function handler(request) {
+  if (request.method !== 'POST') {
     return new Response(JSON.stringify({ message: 'Method Not Allowed' }), {
       status: 405,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const { systemPrompt, contentPrompt, model } = await req.json();
+  const { systemPrompt, contentPrompt, model } = await request.json();
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

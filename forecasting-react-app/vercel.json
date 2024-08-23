@@ -1,15 +1,16 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/server.js", "use": "@vercel/node-edge" },
+    { "src": "api/server.js", "use": "@vercel/node" },
+    { "src": "api/ai-stream.js", "use": "@vercel/edge" },
     { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "build" } }
   ],
   "routes": [
+    { "src": "/api/ai-stream", "dest": "api/ai-stream.js" },
     { "src": "/api/(.*)", "dest": "api/server.js" },
     { "src": "^/static/(.*)", "dest": "/static/$1" },
     { "src": "^/favicon.ico", "dest": "/favicon.ico" },
     { "src": "^/manifest.json", "dest": "/manifest.json" },
-    { "src": "/api/ai-stream", "dest": "api/ai-stream.js" },
     { "src": "^/(.*)", "dest": "/index.html" }
   ]
 }
