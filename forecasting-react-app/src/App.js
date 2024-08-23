@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Landing from './pages/Landing';
@@ -15,6 +15,7 @@ function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/group/:groupId" element={<Navigate to="/" replace />} />
             <Route path="/prediction" element={<PredictionPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/thank-you" element={<ThankYou />} />

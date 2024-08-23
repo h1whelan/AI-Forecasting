@@ -11,6 +11,13 @@ const Landing = () => {
     education: '',
     occupation: '',
   });
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const groupId = params.get('groupId');
+    if (groupId) {
+      localStorage.setItem('groupId', groupId);
+    }
+  }, [location]);
 
   const handleInputChange = (e) => {
     setDemographics({ ...demographics, [e.target.name]: e.target.value });
@@ -18,15 +25,16 @@ const Landing = () => {
 
   const startStudy = async (e) => {
     e.preventDefault();
-    const group = Math.random() < 0.5 ? 'control' : 'study';
+    const groupId = localStorage.getItem('groupId');
+    const group = groupId === 'A' ? 'control' : 'study';
     const userId = uuidv4();
     
     try {
-      await submitDemographics({ ...demographics, userId });
+      await submitDemographics({ ...demographics, userId, group });
       navigate('/prediction', { state: { group, userId } });
     } catch (error) {
       console.error('Error submitting demographics:', error);
-      // Handle error (e.g., show error message to user)
+      // TODO: Handle error
     }
   };
 
