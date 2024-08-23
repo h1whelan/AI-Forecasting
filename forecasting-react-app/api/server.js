@@ -120,23 +120,15 @@ app.get('/api/study-data', async (req, res) => {
   }
 });
 
-const OpenAI = require('openai');
-
-const openai = new OpenAI({
-  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-});
-
 app.post('/api/ai-stream', async (req, res) => {
   const { systemPrompt, contentPrompt, model } = req.body;
 
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  });
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
 
   try {
-    const stream = await openai.chat.completions.create({
+    const aiStream = await openai.chat.completions.create({
       model: model || 'gpt-4-turbo',
       messages: [
         { role: 'system', content: systemPrompt },
@@ -145,7 +137,7 @@ app.post('/api/ai-stream', async (req, res) => {
       stream: true,
     });
 
-    for await (const chunk of stream) {
+    for await (const chunk of aiStream) {
       const content = chunk.choices[0]?.delta?.content || '';
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
@@ -160,6 +152,63 @@ app.post('/api/ai-stream', async (req, res) => {
     res.end();
   }
 });
+
+const OpenAI = require('openai');
+
+const openai = new OpenAI({
+  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+});
+
+const config = {
+  runtime: 'edge',
+};
+
+async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ message: 'Method Not Allowed' });
+    return;
+  }
+
+  const { systemPrompt, contentPrompt, model } = await req.json();
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const aiStream = await openai.chat.completions.create({
+          model: model || 'gpt-4-turbo',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: contentPrompt }
+          ],
+          stream: true,
+        });
+
+        for await (const chunk of aiStream) {
+          const content = chunk.choices[0]?.delta?.content || '';
+          if (content) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+          }
+        }
+
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      } catch (error) {
+        console.error('Error in AI stream:', error);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'An error occurred' })}\n\n`));
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+}
 
 const port = process.env.BACKENDPORT || 5000;
 app.listen(port, () => {

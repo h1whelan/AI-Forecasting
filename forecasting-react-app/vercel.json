@@ -1,17 +1,15 @@
 {
-    "version": 2,
-    "builds": [
-      { "src": "api/server.js", "use": "@vercel/node" },
-      { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "build" } }
-    ],
-    "routes": [
-      { "src": "/api/(.*)", "dest": "api/server.js" },
-      { "src": "^/static/(.*)", "dest": "/static/$1" },
-      { "src": "^/favicon.ico", "dest": "/favicon.ico" },
-      { "src": "^/manifest.json", "dest": "/manifest.json" },
-      { "src": "^/(.*)", "dest": "/index.html" }
-    ],
-    "env": {
-      "VERCEL_FUNCTIONS_TIMEOUT": "60"
-    }
+  "version": 2,
+  "builds": [
+    { "src": "api/server.js", "use": "@vercel/node-edge" },
+    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "build" } }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "api/server.js" },
+    { "src": "^/static/(.*)", "dest": "/static/$1" },
+    { "src": "^/favicon.ico", "dest": "/favicon.ico" },
+    { "src": "^/manifest.json", "dest": "/manifest.json" },
+    { "src": "/api/ai-stream", "dest": "api/ai-stream.js" },
+    { "src": "^/(.*)", "dest": "/index.html" }
+  ]
 }
