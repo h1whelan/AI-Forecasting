@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { submitDemographics } from '../services/apiService';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [demographics, setDemographics] = useState({
     age: '',
     gender: '',
