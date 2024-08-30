@@ -165,7 +165,9 @@ const PredictionPage = () => {
     try {
       let aiResponse = '';
       await getAiResponseStream(
-        group === 'study' ? prompts.studyGroupChat : prompts.controlGroupChat,
+        group === 'study' ? prompts.studyGroupChat : 
+        group === 'control' ? prompts.controlGroupChat : 
+        prompts.predictionGroupChat,
         fullInput,
         model,
         (chunk) => {

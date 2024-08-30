@@ -27,7 +27,7 @@ const Landing = () => {
   const startStudy = async (e) => {
     e.preventDefault();
     const groupId = localStorage.getItem('groupId');
-    const group = groupId === 'A' ? 'control' : 'study';
+    const group = groupId === 'A' ? 'control' : groupId === 'B' ? 'study' : groupId === 'C' ? 'prediction' : 'control';
     const userId = uuidv4();
     
     try {
