@@ -99,8 +99,8 @@ The difference in AI prompts allows us to study whether more specific, contextua
    cd api
    npm install
    ```
-3. Set up environment variables (see `.env.example` files)
-4. Configure AI API keys and endpoints
+3. Set up environment variables
+4. Configure AI API keys and endpoints - current set up is OpenAI and MongoDB, you will need API keys for these.
 5. Start the backend server:
    ```
    cd api
