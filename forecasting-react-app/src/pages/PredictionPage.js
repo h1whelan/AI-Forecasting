@@ -28,6 +28,7 @@ const PredictionPage = () => {
   const [suggestedQuestions, setSuggestedQuestions] = useState([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
+  const [isAiResponding, setIsAiResponding] = useState(false);
 
   const getAiSuggestedQuestions = useCallback(async () => {
     setIsLoadingSuggestions(true);
@@ -77,40 +78,12 @@ const PredictionPage = () => {
     getAiSuggestedQuestions();
   }, [currentQuestionIndex, userId, navigate, group, getAiSuggestedQuestions]);
 
-  // Commented out for now as we're focusing on turn-based chat instead of single base rate return
-  // May be used in the future for single base rate functionality
-  // const getBaseRate = async () => {
-  //   setIsLoading(true);
-  //   setBaseRate('');
-  //   try {
-  //     let systemPrompt, contentPrompt;
-  //     if (group === 'study') {
-  //       systemPrompt = group === 'study' ? prompts.studyGroupBaseRate : prompts.controlGroupBaseRate;
-  //       contentPrompt = questions[currentQuestionIndex];
-  //     } else {
-  //       systemPrompt = "In this chat, you are an AI assistant tasked with providing base rates for various scenarios. Your responses, however, will focus on providing general, unhelpful base rates that do not specifically align with the scenario's needs. Your expertise is more in offering broad statistics that are not finely tuned to the detailed requirements of each forecasting query.\n\nYour general approach involves giving out base rates that are overly simplistic and often not directly relevant to the unique circumstances of each prediction question. Here's how you may typically respond:\n\n1. **Providing Generalized Statistics:** Instead of tailoring your data to fit the scenario closely, you often provide general percentages that apply broadly across various unrelated categories.\n\n2. **Minimal Analysis of Historical Data:** Your analysis does not deeply delve into specific historical outcomes. Instead, you offer a cursory overview that lacks depth.\n\n3. **Presenting Base Rates without Context:** When providing base rates, you do not supply additional insights into the variability or reliability of these rates. Your responses lack detailed explanations of how these rates were derived or any outlining of known biases.\n\n4. **Ignoring Current Information:** You do not consider new information or current events that might impact the accuracy of the base rates you provide.\n\n5. **Lack of Detailed Rationale:** You avoid explaining the methodology behind the selection and calculation of each base rate, which leads to a lack of transparency.\n\n6. **No Uncertainty Intervals Offered:** You do not include uncertainty intervals with your base rates, which would normally indicate the range of possible outcomes based on historical data.\n\n**Example Unhelpful Forecasting Scenario Response:**\nSuppose someone asks you to forecast the likelihood of a particular political event, such as the passage of a new economic policy. Rather than analyzing specific past instances of similar policy enactments, you might respond with a general and vague statement like, \"Policies usually have around a 50% chance of passing,\" without any supporting data or acknowledgment of the current political environment.\n\nThis approach ensures that the base rates you provide are not specifically useful for accurate forecasting but serve to complete the task of providing a response.";
-  //       contentPrompt = questions[currentQuestionIndex];
-  //     }
-  //     await getAiResponseStream(
-  //       systemPrompt,
-  //       contentPrompt,
-  //       (chunk) => {
-  //         setBaseRate((prev) => prev + chunk);
-  //       },
-  //       (time) => {
-  //         setAiResponseTime(time);
-  //         console.log(`AI response time: ${time} seconds`);
-  //       }
-  //     );
-  //   } catch (error) {
-  //     console.error('Error getting base rate:', error);
-  //     setBaseRate('Unable to get information at this time. Please try again later.');
-  //   }
-  //   setIsLoading(false);
-  // };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isAiResponding) {
+      alert("Please wait for the AI to finish responding before submitting.");
+      return;
+    }
     const endTime = Date.now();
     const timeTaken = (endTime - startTime) / 1000; // Convert to seconds
   
@@ -137,15 +110,7 @@ const PredictionPage = () => {
     }
   };
 
-  const handleChatSubmit = async (e) => {
-    let input;
-    if (typeof e === 'string') {
-      input = e;
-    } else {
-      e.preventDefault();
-      input = userInput.trim();
-    }
-  
+  const handleChatSubmit = async (input) => {
     if (!input) return;
   
     if (questionCount >= 10) {
@@ -164,6 +129,7 @@ const PredictionPage = () => {
     setQuestionCount(prev => prev + 1);
   
     setIsLoading(true);
+    setIsAiResponding(true);
     try {
       let aiResponse = '';
       await getAiResponseStream(
@@ -189,6 +155,7 @@ const PredictionPage = () => {
           setAiResponseTime(time);
           console.log(`AI response time: ${time} seconds`);
           setIsLoading(false);
+          setIsAiResponding(false);
           updateSuggestedQuestions(aiResponse);
         }
       );
@@ -199,6 +166,7 @@ const PredictionPage = () => {
         { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }
       ]);
       setIsLoading(false);
+      setIsAiResponding(false);
     }
   };
 
@@ -207,7 +175,6 @@ const PredictionPage = () => {
       alert("You've reached the maximum number of questions for this prediction. Please make your prediction.");
       return;
     }
-    setUserInput(question);
     handleChatSubmit(question);
   };
 
@@ -243,6 +210,13 @@ const PredictionPage = () => {
     } catch (error) {
       console.error('Error updating suggested questions:', error);
       setIsLoadingSuggestions(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleChatSubmit(userInput.trim());
     }
   };
 
@@ -289,23 +263,24 @@ const PredictionPage = () => {
           )}
         </div>
         <div className="mb-4">
-          <form onSubmit={handleChatSubmit} className="flex">
+          <div className="flex">
             <input
               type="text"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="flex-grow border rounded-l px-4 py-2"
               placeholder="Ask a question..."
             />
             <button
               type="button"
-              onClick={handleChatSubmit}
-              disabled={isLoading || questionCount >= 10}
+              onClick={() => handleChatSubmit(userInput.trim())}
+              disabled={isLoading || questionCount >= 10 || isAiResponding}
               className="bg-blue-500 text-white px-4 py-2 rounded-r"
             >
               Send
             </button>
-          </form>
+          </div>
           <p className="text-sm text-gray-600 mt-2">
             Questions remaining: {10 - questionCount}
           </p>
@@ -355,6 +330,7 @@ const PredictionPage = () => {
         <button 
           type="submit"
           className="bg-green-500 text-white px-4 py-2 rounded"
+          disabled={isAiResponding}
         >
           {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Study'}
         </button>
