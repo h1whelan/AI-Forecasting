@@ -14,6 +14,7 @@ const GroupRedirect = () => {
 
   React.useEffect(() => {
     if (groupId) {
+      console.log('GroupRedirect: Setting groupId in localStorage:', groupId);
       localStorage.setItem('groupId', groupId);
       navigate('/', { replace: true });
     }

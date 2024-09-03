@@ -7,11 +7,9 @@ const Landing = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-
     const groupId = localStorage.getItem('groupId');
 
-    const group = groupId === 'A' ? 'control' : groupId === 'B' ? 'study' : groupId === 'C' ? 'prediction' : 'control';
+    const group = groupId === 'A' || groupId === 'a' ? 'control' : groupId === 'B' || groupId === 'b' ? 'study' : groupId === 'C' || groupId === 'c' ? 'prediction' : 'control';
     const userId = uuidv4();
 
     // Redirect to PredictionPage with group and userId

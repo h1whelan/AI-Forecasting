@@ -34,7 +34,9 @@ const PredictionPage = () => {
     try {
       const systemPrompt = group === 'study' 
         ? prompts.studyGroupSuggestedQuestions
-        : prompts.controlGroupSuggestedQuestions;
+        : group === 'prediction'
+          ? prompts.predictionGroupSuggestedQuestions
+          : prompts.controlGroupSuggestedQuestions;
 
       const contentPrompt = `Here is the forecasting question: "${questions[currentQuestionIndex]}".`;
 
@@ -167,7 +169,8 @@ const PredictionPage = () => {
       await getAiResponseStream(
         group === 'study' ? prompts.studyGroupChat : 
         group === 'control' ? prompts.controlGroupChat : 
-        prompts.predictionGroupChat,
+        group === 'prediction' ? prompts.predictionGroupChat :
+        prompts.studyGroupChat,
         fullInput,
         model,
         (chunk) => {
