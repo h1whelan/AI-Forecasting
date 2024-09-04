@@ -6,9 +6,12 @@ import { submitResponse } from '../services/apiService';
 import { prompts } from '../lib/prompts';
 
 const questions = [
-  "Will the closing value for the Standard & Poor's 500 (S&P 500) be less than 5400 on October 31st, 2024?",
-  "Will the number of refugees and migrants arriving in Europe by sea in the Mediterranean be greater than 12,000 between August 1st, 2024 and October 31, 2024?",
-  "Will the closing price of Bitcoin be less than USD 50,000 on October 31st, 2024?"
+  "Will British Airways Flight from Heathrow Airport (LHR) to Munich International Airport (MUC) departing at 4.55pm arrive at its expected time, or no longer than 30 mins after the expected arrival time?",
+  "Will the price of the S&P 500 be higher on 31st October, 2024 than its price on the 30th September, 2024?",
+  "What is the probability that a new, significant military confrontation involving naval forces from China and another claimant country will occur in the South China Sea by December 31, 2024? Significant can be defined as an incident resulting in at least one naval vessel being damaged or casualties reported.",
+  "Will Brighton beat Tottenham on 6th October, 2024 in the English Premier League (EPL)?",
+  "Will the number of refugees and migrants that arrive in Europe via the Mediterranean see be greater than 18,000 in the month of October, 2024?",
+  "Will the odds of Donald Trump winning the US election be greater than 50% on the 31st October, 2024, according to the Ipsos poll?"
 ];
 
 const PredictionPage = () => {
