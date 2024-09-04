@@ -12,5 +12,10 @@
     { "src": "^/favicon.ico", "dest": "/favicon.ico" },
     { "src": "^/manifest.json", "dest": "/manifest.json" },
     { "src": "^/(.*)", "dest": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/ai-stream.js": {
+      "runtime": "edge"
+    }
+  }
 }
