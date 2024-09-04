@@ -6,7 +6,7 @@ const GroupAssignment = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (groupId === 'A' || groupId === 'B') {
+    if (groupId === 'A' || groupId === 'B' || groupId === 'C') {
       localStorage.setItem('groupId', groupId);
       navigate('/', { replace: true });
     } else {
