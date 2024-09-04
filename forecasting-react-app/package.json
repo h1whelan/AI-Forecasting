@@ -46,8 +46,9 @@
   },
     "scripts": {
       "start": "react-app-rewired start",
-      "build": "react-app-rewired build && npm run build:api",
+      "build": "react-app-rewired build && npm run build:api && npm run build:edge",
       "build:api": "cd api && npm install",
+      "build:edge": "cd api && node build-edge.js",
       "test": "react-app-rewired test",
       "eject": "react-scripts eject",
       "server": "node -r dotenv/config api/server.js",
