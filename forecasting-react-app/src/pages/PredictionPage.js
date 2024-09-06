@@ -6,9 +6,12 @@ import { submitResponse } from '../services/apiService';
 import { prompts } from '../lib/prompts';
 
 const questions = [
-  "Will the closing value for the Standard & Poor's 500 (S&P 500) be less than 5400 on October 31st, 2024?",
-  "Will the number of refugees and migrants arriving in Europe by sea in the Mediterranean be greater than 12,000 between August 1st, 2024 and October 31, 2024?",
-  "Will the closing price of Bitcoin be less than USD 50,000 on October 31st, 2024?"
+  "Will British Airways Flight from Heathrow Airport (LHR) to Munich International Airport (MUC) departing at 4.55pm arrive on Friday 18th October, 2024, at its expected time, or no longer than 30 mins after the expected arrival time?",
+  "Will the price of the S&P 500 be higher on 31st October, 2024 than its price on the 30th September, 2024?",
+  "What is the probability that a new, significant military confrontation involving naval forces from China and another claimant country will occur in the South China Sea by December 31, 2024? Significant can be defined as an incident resulting in at least one naval vessel being damaged or casualties reported.",
+  "Will Brighton beat Tottenham on 6th October, 2024 in the English Premier League (EPL)?",
+  "Will the number of refugees and migrants that arrive in Europe via the Mediterranean see be greater than 18,000 in the month of October, 2024?",
+  "Will the odds of Donald Trump winning the US election be greater than 50% on the 31st October, 2024, according to the Ipsos poll?"
 ];
 
 const PredictionPage = () => {
@@ -30,10 +33,24 @@ const PredictionPage = () => {
   const [questionCount, setQuestionCount] = useState(0);
   const [isAiResponding, setIsAiResponding] = useState(false);
 
+ // Restore full conversation history from sessionStorage when the component mounts
+  useEffect(() => {
+    const savedFullHistory = sessionStorage.getItem('fullChatHistory');
+    if (savedFullHistory) {
+      setChatHistory(JSON.parse(savedFullHistory));
+    }
+  }, []);
+
+  // Save the full chat history to sessionStorage before navigating away
+  const saveConversationHistory = () => {
+    const fullChatHistory = [...chatHistory];
+    sessionStorage.setItem('fullChatHistory', JSON.stringify(fullChatHistory));
+  };
+
   const getAiSuggestedQuestions = useCallback(async () => {
     setIsLoadingSuggestions(true);
     try {
-      const systemPrompt = group === 'study' 
+      const systemPrompt = group === 'study'
         ? prompts.studyGroupSuggestedQuestions
         : group === 'prediction'
           ? prompts.predictionGroupSuggestedQuestions
@@ -42,7 +59,7 @@ const PredictionPage = () => {
       const contentPrompt = `Here is the forecasting question: "${questions[currentQuestionIndex]}".`;
 
       const model = 'gpt-4o'
-      
+
       let fullResponse = '';
       await getAiResponseStream(
         systemPrompt,
@@ -86,7 +103,7 @@ const PredictionPage = () => {
     }
     const endTime = Date.now();
     const timeTaken = (endTime - startTime) / 1000; // Convert to seconds
-  
+
     try {
       await submitResponse({
         userId,
@@ -98,8 +115,9 @@ const PredictionPage = () => {
         baseRate,
         aiResponseTime
       });
-  
+
       if (currentQuestionIndex < questions.length - 1) {
+        saveConversationHistory();
         setCurrentQuestionIndex(prevIndex => prevIndex + 1);
       } else {
         navigate('/thank-you');
@@ -112,29 +130,29 @@ const PredictionPage = () => {
 
   const handleChatSubmit = async (input) => {
     if (!input) return;
-  
+
     if (questionCount >= 10) {
       alert("You've reached the maximum number of questions for this prediction. Please make your prediction.");
       return;
     }
-  
+
     const model = 'gpt-4-turbo'
-  
+
     const currentQuestion = questions[currentQuestionIndex];
     const fullInput = `Question: ${currentQuestion}\nUser: ${input}`;
-  
+
     const newUserMessage = { role: 'user', content: input };
     setChatHistory(prev => [...prev, newUserMessage]);
     setUserInput('');
     setQuestionCount(prev => prev + 1);
-  
+
     setIsLoading(true);
     setIsAiResponding(true);
     try {
       let aiResponse = '';
       await getAiResponseStream(
-        group === 'study' ? prompts.studyGroupChat : 
-        group === 'control' ? prompts.controlGroupChat : 
+        group === 'study' ? prompts.studyGroupChat :
+        group === 'control' ? prompts.controlGroupChat :
         group === 'prediction' ? prompts.predictionGroupChat :
         prompts.studyGroupChat,
         fullInput,
@@ -184,15 +202,15 @@ const PredictionPage = () => {
       const conversationContext = chatHistory
         .map(msg => `${msg.role}: ${msg.content}`)
         .join('\n') + `\nassistant: ${lastResponse}`;
-  
-      const systemPrompt = group === 'study' 
+
+      const systemPrompt = group === 'study'
         ? prompts.studyGroupUpdateSuggestions
         : prompts.controlGroupUpdateSuggestions;
 
       const contentPrompt = `Given this conversation context:\n${conversationContext}\n\nSuggest 3 follow-up questions.`;
-      
+
       const model = 'gpt-4o'
-      
+
       let fullResponse = '';
       await getAiResponseStream(
         systemPrompt,
@@ -229,7 +247,7 @@ const PredictionPage = () => {
         </div>
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Chat with AI Assistant</h3>
-          <div className="border p-4 mb-4 h-64 overflow-y-auto">
+          <div className="border-2 p-4 mb-4 h-[50vh] w-[70vw] overflow-y-scroll">
             {chatHistory.map((message, index) => (
               <div key={index} className={`mb-2 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                 <span className={`inline-block p-2 rounded ${message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
@@ -285,55 +303,27 @@ const PredictionPage = () => {
             Questions remaining: {10 - questionCount}
           </p>
         </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Your Prediction:</label>
-          <div>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio"
-                name="prediction"
-                value="Yes"
-                checked={prediction === 'Yes'}
-                onChange={(e) => setPrediction(e.target.value)}
-              />
-              <span className="ml-2">Yes</span>
-            </label>
-            <label className="inline-flex items-center ml-6">
-              <input
-                type="radio"
-                className="form-radio"
-                name="prediction"
-                value="No"
-                checked={prediction === 'No'}
-                onChange={(e) => setPrediction(e.target.value)}
-              />
-              <span className="ml-2">No</span>
-            </label>
-          </div>
+
+        <div className="flex justify-between">
+          <button
+            type="button"
+            className="bg-gray-500 text-white px-4 py-2 rounded"
+            onClick={() => {
+              saveConversationHistory();
+              navigate(-1);
+            }}
+          >
+            Previous Page
+          </button>
+
+          <button
+            type="submit"
+            className="bg-green-500 text-white px-4 py-2 rounded"
+            disabled={isAiResponding}
+          >
+            {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Study'}
+          </button>
         </div>
-        <div className="mb-4">
-          <label htmlFor="confidence" className="block text-sm font-medium text-gray-700">
-            Confidence Level (1-100):
-          </label>
-          <input
-            type="range"
-            id="confidence"
-            min="1"
-            max="100"
-            value={confidence}
-            onChange={(e) => setConfidence(e.target.value)}
-            className="w-full"
-          />
-          <span>{confidence}</span>
-        </div>
-        <button 
-          type="submit"
-          className="bg-green-500 text-white px-4 py-2 rounded"
-          disabled={isAiResponding}
-        >
-          {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Study'}
-        </button>
       </form>
     </div>
   );
