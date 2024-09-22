@@ -28,72 +28,25 @@ const PredictionPage = () => {
   const [aiResponseTime, setAiResponseTime] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [userInput, setUserInput] = useState('');
-  const [suggestedQuestions, setSuggestedQuestions] = useState([]);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [isAiResponding, setIsAiResponding] = useState(false);
+  const [finalBaseRate, setFinalBaseRate] = useState(null); // For saving final base rate for study group
 
- // Restore full conversation history from sessionStorage when the component mounts
+  // Load conversation history specific to the current question
   useEffect(() => {
-    const savedFullHistory = sessionStorage.getItem('fullChatHistory');
-    if (savedFullHistory) {
-      setChatHistory(JSON.parse(savedFullHistory));
+    const savedHistory = sessionStorage.getItem(`chatHistory_${currentQuestionIndex}`);
+    if (savedHistory) {
+      setChatHistory(JSON.parse(savedHistory));
+    } else {
+      setChatHistory([]); // Reset chat history when moving to a new question
     }
-  }, []);
+  }, [currentQuestionIndex]);
 
-  // Save the full chat history to sessionStorage before navigating away
+  // Save conversation history specific to the current question
   const saveConversationHistory = () => {
     const fullChatHistory = [...chatHistory];
-    sessionStorage.setItem('fullChatHistory', JSON.stringify(fullChatHistory));
+    sessionStorage.setItem(`chatHistory_${currentQuestionIndex}`, JSON.stringify(fullChatHistory));
   };
-
-  const getAiSuggestedQuestions = useCallback(async () => {
-    setIsLoadingSuggestions(true);
-    try {
-      const systemPrompt = group === 'study'
-        ? prompts.studyGroupSuggestedQuestions
-        : group === 'prediction'
-          ? prompts.predictionGroupSuggestedQuestions
-          : prompts.controlGroupSuggestedQuestions;
-
-      const contentPrompt = `Here is the forecasting question: "${questions[currentQuestionIndex]}".`;
-
-      const model = 'gpt-4o'
-
-      let fullResponse = '';
-      await getAiResponseStream(
-        systemPrompt,
-        contentPrompt,
-        model,
-        (chunk) => {
-          fullResponse += chunk;
-        },
-        () => {
-          const suggestions = fullResponse.split('|||').map(q => q.trim()).filter(q => q);
-          setSuggestedQuestions(suggestions);
-          setIsLoadingSuggestions(false);
-        }
-      );
-    } catch (error) {
-      console.error('Error getting AI suggested questions:', error);
-      setIsLoadingSuggestions(false);
-    }
-  }, [group, currentQuestionIndex]);
-
-  useEffect(() => {
-    if (!userId) {
-      navigate('/');
-    }
-    setBaseRate('');
-    setPrediction('');
-    setConfidence(50);
-    setStartTime(Date.now());
-    setAiResponseTime(null);
-    setChatHistory([]);
-    setSuggestedQuestions([]);
-    setQuestionCount(0);
-    getAiSuggestedQuestions();
-  }, [currentQuestionIndex, userId, navigate, group, getAiSuggestedQuestions]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -112,7 +65,7 @@ const PredictionPage = () => {
         prediction,
         confidence: parseInt(confidence),
         timeTaken,
-        baseRate,
+        baseRate: finalBaseRate || baseRate, // Use the saved final base rate for study group
         aiResponseTime
       });
 
@@ -136,7 +89,7 @@ const PredictionPage = () => {
       return;
     }
 
-    const model = 'gpt-4-turbo'
+    const model = 'gpt-4-turbo';
 
     const currentQuestion = questions[currentQuestionIndex];
     const fullInput = `Question: ${currentQuestion}\nUser: ${input}`;
@@ -174,7 +127,12 @@ const PredictionPage = () => {
           console.log(`AI response time: ${time} seconds`);
           setIsLoading(false);
           setIsAiResponding(false);
-          updateSuggestedQuestions(aiResponse);
+ //         updateSuggestedQuestions(aiResponse);
+
+          // If study group and base rate is provided, save it as the final base rate
+          if (group === 'study' && baseRate && !finalBaseRate) {
+            setFinalBaseRate(baseRate);
+          }
         }
       );
     } catch (error) {
@@ -185,49 +143,6 @@ const PredictionPage = () => {
       ]);
       setIsLoading(false);
       setIsAiResponding(false);
-    }
-  };
-
-  const handleSuggestedQuestionClick = (question) => {
-    if (questionCount >= 10) {
-      alert("You've reached the maximum number of questions for this prediction. Please make your prediction.");
-      return;
-    }
-    handleChatSubmit(question);
-  };
-
-  const updateSuggestedQuestions = async (lastResponse) => {
-    setIsLoadingSuggestions(true);
-    try {
-      const conversationContext = chatHistory
-        .map(msg => `${msg.role}: ${msg.content}`)
-        .join('\n') + `\nassistant: ${lastResponse}`;
-
-      const systemPrompt = group === 'study'
-        ? prompts.studyGroupUpdateSuggestions
-        : prompts.controlGroupUpdateSuggestions;
-
-      const contentPrompt = `Given this conversation context:\n${conversationContext}\n\nSuggest 3 follow-up questions.`;
-
-      const model = 'gpt-4o'
-
-      let fullResponse = '';
-      await getAiResponseStream(
-        systemPrompt,
-        contentPrompt,
-        model,
-        (chunk) => {
-          fullResponse += chunk;
-        },
-        () => {
-          const suggestions = fullResponse.split('|||').map(q => q.trim()).filter(q => q);
-          setSuggestedQuestions(suggestions);
-          setIsLoadingSuggestions(false);
-        }
-      );
-    } catch (error) {
-      console.error('Error updating suggested questions:', error);
-      setIsLoadingSuggestions(false);
     }
   };
 
@@ -260,25 +175,6 @@ const PredictionPage = () => {
               </div>
             ))}
           </div>
-        </div>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold">Suggested Questions:</h3>
-          {isLoadingSuggestions ? (
-            <p>Loading suggestions...</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {suggestedQuestions.map((question, index) => (
-                <button
-                  key={index}
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-2 px-4 rounded-full text-sm"
-                  onClick={() => handleSuggestedQuestionClick(question)}
-                  type="button"
-                >
-                  {question}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
         <div className="mb-4">
           <div className="flex">
