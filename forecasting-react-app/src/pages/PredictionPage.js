@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { marked } from 'marked';
 import { getAiResponseStream } from '../services/aiService';
@@ -20,8 +20,8 @@ const PredictionPage = () => {
   const group = location.state?.group || 'control';
   const userId = location.state?.userId;
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [prediction, setPrediction] = useState('');
-  const [confidence, setConfidence] = useState(50);
+  const [prediction] = useState('');
+  const [confidence] = useState(50);
   const [baseRate, setBaseRate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [startTime, setStartTime] = useState(null);
@@ -35,6 +35,7 @@ const PredictionPage = () => {
   // Load conversation history specific to the current question
   useEffect(() => {
     const savedHistory = sessionStorage.getItem(`chatHistory_${currentQuestionIndex}`);
+    setStartTime(Date.now())
     if (savedHistory) {
       setChatHistory(JSON.parse(savedHistory));
     } else {
@@ -66,8 +67,11 @@ const PredictionPage = () => {
         confidence: parseInt(confidence),
         timeTaken,
         baseRate: finalBaseRate || baseRate, // Use the saved final base rate for study group
-        aiResponseTime
+        aiResponseTime,
+        questionCount // Add the number of questions asked by the user
       });
+
+      setQuestionCount(0)
 
       if (currentQuestionIndex < questions.length - 1) {
         saveConversationHistory();
@@ -119,6 +123,7 @@ const PredictionPage = () => {
             } else {
               newHistory.push({ role: 'assistant', content: aiResponse });
             }
+            setBaseRate(fullInput + '\n\nAI: ' + aiResponse)
             return newHistory;
           });
         },
