@@ -9,9 +9,8 @@ const questions = [
   "Will British Airways Flight from Heathrow Airport (LHR) to Munich International Airport (MUC) departing at 4.55pm arrive on Friday 18th October, 2024, at its expected time, or no longer than 30 mins after the expected arrival time?",
   "Will the price of the S&P 500 be higher on 31st October, 2024 than its price on the 30th September, 2024?",
   "What is the probability that a new, significant military confrontation involving naval forces from China and another claimant country will occur in the South China Sea by December 31, 2024? Significant can be defined as an incident resulting in at least one naval vessel being damaged or casualties reported.",
-  "Will Brighton beat Tottenham on 6th October, 2024 in the English Premier League (EPL)?",
+  "Will Fulham beat Aston Villa on 19th October, 2024 in the English Premier League (EPL)?",
   "Will the number of refugees and migrants that arrive in Europe via the Mediterranean see be greater than 18,000 in the month of October, 2024?",
-  "Will the odds of Donald Trump winning the US election be greater than 50% on the 31st October, 2024, according to the Ipsos poll?"
 ];
 
 const PredictionPage = () => {
@@ -32,16 +31,11 @@ const PredictionPage = () => {
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [finalBaseRate, setFinalBaseRate] = useState(null); // For saving final base rate for study group
 
-  // Load conversation history specific to the current question
-  useEffect(() => {
-    const savedHistory = sessionStorage.getItem(`chatHistory_${currentQuestionIndex}`);
-    setStartTime(Date.now())
-    if (savedHistory) {
-      setChatHistory(JSON.parse(savedHistory));
-    } else {
-      setChatHistory([]); // Reset chat history when moving to a new question
-    }
-  }, [currentQuestionIndex]);
+// Load conversation history specific to the current question
+useEffect(() => {
+  setStartTime(Date.now());
+  setChatHistory([]); // Always reset chat history when opening a new question
+}, [currentQuestionIndex]);
 
   // Save conversation history specific to the current question
   const saveConversationHistory = () => {
