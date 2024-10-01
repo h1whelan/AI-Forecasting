@@ -34,6 +34,8 @@ const Response = mongoose.model('Response', {
   confidence: Number,
   timeTaken: Number,
   baseRate: String,
+  aiResponseTime: Number,
+  questionCount: Number,
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -61,8 +63,8 @@ app.post('/api/demographics', async (req, res) => {
 
 app.post('/api/response', async (req, res) => {
   console.log('Received request body:', req.body);
-  const { userId, group, question, prediction, confidence, timeTaken, baseRate } = req.body;
-  const response = new Response({ userId, group, question, prediction, confidence, timeTaken, baseRate });
+  const { userId, group, question, prediction, confidence, timeTaken, baseRate, aiResponseTime, questionCount } = req.body;
+  const response = new Response({ userId, group, question, prediction, confidence, timeTaken, baseRate, aiResponseTime, questionCount });
   try {
     await response.save();
     res.status(201).json(response);
