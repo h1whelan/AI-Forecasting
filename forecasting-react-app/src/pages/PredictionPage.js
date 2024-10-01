@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { marked } from 'marked';
 import { getAiResponseStream } from '../services/aiService';
@@ -9,9 +9,10 @@ const questions = [
   "Will British Airways Flight from Heathrow Airport (LHR) to Munich International Airport (MUC) departing at 4.55pm arrive on Friday 18th October, 2024, at its expected time, or no longer than 30 mins after the expected arrival time?",
   "Will the price of the S&P 500 be higher on 31st October, 2024 than its price on the 30th September, 2024?",
   "What is the probability that a new, significant military confrontation involving naval forces from China and another claimant country will occur in the South China Sea by December 31, 2024? Significant can be defined as an incident resulting in at least one naval vessel being damaged or casualties reported.",
-  "Will Will Fulham beat Aston Villa on 19th October, 2024 in the English Premier League (EPL)?",
-  "Will the number of refugees and migrants that arrive in Europe via the Mediterranean sea be greater than 18,000 in the month of October, 2024?",
-  ];
+  "Will Brighton beat Tottenham on 6th October, 2024 in the English Premier League (EPL)?",
+  "Will the number of refugees and migrants that arrive in Europe via the Mediterranean see be greater than 18,000 in the month of October, 2024?",
+  "Will the odds of Donald Trump winning the US election be greater than 50% on the 31st October, 2024, according to the Ipsos poll?"
+];
 
 const PredictionPage = () => {
   const location = useLocation();
@@ -27,16 +28,72 @@ const PredictionPage = () => {
   const [aiResponseTime, setAiResponseTime] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [userInput, setUserInput] = useState('');
+  const [suggestedQuestions, setSuggestedQuestions] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [isAiResponding, setIsAiResponding] = useState(false);
-  const [finalBaseRate, setFinalBaseRate] = useState(null);
 
-  // Clear conversation history whenever the question index changes
+ // Restore full conversation history from sessionStorage when the component mounts
   useEffect(() => {
-    setChatHistory([]); // Reset chat history when moving to a new question
-    setUserInput(''); // Clear user input when moving to a new question
-    setQuestionCount(0); // Reset question count for each question
-  }, [currentQuestionIndex]);
+    const savedFullHistory = sessionStorage.getItem('fullChatHistory');
+    if (savedFullHistory) {
+      setChatHistory(JSON.parse(savedFullHistory));
+    }
+  }, []);
+
+  // Save the full chat history to sessionStorage before navigating away
+  const saveConversationHistory = () => {
+    const fullChatHistory = [...chatHistory];
+    sessionStorage.setItem('fullChatHistory', JSON.stringify(fullChatHistory));
+  };
+
+  const getAiSuggestedQuestions = useCallback(async () => {
+    setIsLoadingSuggestions(true);
+    try {
+      const systemPrompt = group === 'study'
+        ? prompts.studyGroupSuggestedQuestions
+        : group === 'prediction'
+          ? prompts.predictionGroupSuggestedQuestions
+          : prompts.controlGroupSuggestedQuestions;
+
+      const contentPrompt = `Here is the forecasting question: "${questions[currentQuestionIndex]}".`;
+
+      const model = 'gpt-4o'
+
+      let fullResponse = '';
+      await getAiResponseStream(
+        systemPrompt,
+        contentPrompt,
+        model,
+        (chunk) => {
+          fullResponse += chunk;
+        },
+        () => {
+          const suggestions = fullResponse.split('|||').map(q => q.trim()).filter(q => q);
+          setSuggestedQuestions(suggestions);
+          setIsLoadingSuggestions(false);
+        }
+      );
+    } catch (error) {
+      console.error('Error getting AI suggested questions:', error);
+      setIsLoadingSuggestions(false);
+    }
+  }, [group, currentQuestionIndex]);
+
+  useEffect(() => {
+    if (!userId) {
+      navigate('/');
+    }
+    setBaseRate('');
+    setPrediction('');
+    setConfidence(50);
+    setStartTime(Date.now());
+    setAiResponseTime(null);
+    setChatHistory([]);
+    setSuggestedQuestions([]);
+    setQuestionCount(0);
+    getAiSuggestedQuestions();
+  }, [currentQuestionIndex, userId, navigate, group, getAiSuggestedQuestions]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,17 +112,19 @@ const PredictionPage = () => {
         prediction,
         confidence: parseInt(confidence),
         timeTaken,
-        baseRate: finalBaseRate || baseRate,
+        baseRate,
         aiResponseTime
       });
 
       if (currentQuestionIndex < questions.length - 1) {
+        saveConversationHistory();
         setCurrentQuestionIndex(prevIndex => prevIndex + 1);
       } else {
         navigate('/thank-you');
       }
     } catch (error) {
       console.error('Error submitting response:', error);
+      // Handle error (show message to user, etc.)
     }
   };
 
@@ -77,7 +136,8 @@ const PredictionPage = () => {
       return;
     }
 
-    const model = 'gpt-4-turbo';
+    const model = 'gpt-4-turbo'
+
     const currentQuestion = questions[currentQuestionIndex];
     const fullInput = `Question: ${currentQuestion}\nUser: ${input}`;
 
@@ -98,30 +158,23 @@ const PredictionPage = () => {
         fullInput,
         model,
         (chunk) => {
-          const words = chunk.split(' '); // Split chunk into words
-          words.forEach((word, i) => {
-            setTimeout(() => {
-              aiResponse += word + ' ';
-              setChatHistory(prev => {
-                const newHistory = [...prev];
-                if (newHistory[newHistory.length - 1].role === 'assistant') {
-                  newHistory[newHistory.length - 1].content = aiResponse;
-                } else {
-                  newHistory.push({ role: 'assistant', content: aiResponse });
-                }
-                return newHistory;
-              });
-            }, i * 50); // Delay each word to create typing effect (adjust speed as needed)
+          aiResponse += chunk;
+          setChatHistory(prev => {
+            const newHistory = [...prev];
+            if (newHistory[newHistory.length - 1].role === 'assistant') {
+              newHistory[newHistory.length - 1].content = aiResponse;
+            } else {
+              newHistory.push({ role: 'assistant', content: aiResponse });
+            }
+            return newHistory;
           });
         },
         (time) => {
           setAiResponseTime(time);
+          console.log(`AI response time: ${time} seconds`);
           setIsLoading(false);
           setIsAiResponding(false);
-
-          if (group === 'study' && baseRate && !finalBaseRate) {
-            setFinalBaseRate(baseRate);
-          }
+          updateSuggestedQuestions(aiResponse);
         }
       );
     } catch (error) {
@@ -132,6 +185,49 @@ const PredictionPage = () => {
       ]);
       setIsLoading(false);
       setIsAiResponding(false);
+    }
+  };
+
+  const handleSuggestedQuestionClick = (question) => {
+    if (questionCount >= 10) {
+      alert("You've reached the maximum number of questions for this prediction. Please make your prediction.");
+      return;
+    }
+    handleChatSubmit(question);
+  };
+
+  const updateSuggestedQuestions = async (lastResponse) => {
+    setIsLoadingSuggestions(true);
+    try {
+      const conversationContext = chatHistory
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join('\n') + `\nassistant: ${lastResponse}`;
+
+      const systemPrompt = group === 'study'
+        ? prompts.studyGroupUpdateSuggestions
+        : prompts.controlGroupUpdateSuggestions;
+
+      const contentPrompt = `Given this conversation context:\n${conversationContext}\n\nSuggest 3 follow-up questions.`;
+
+      const model = 'gpt-4o'
+
+      let fullResponse = '';
+      await getAiResponseStream(
+        systemPrompt,
+        contentPrompt,
+        model,
+        (chunk) => {
+          fullResponse += chunk;
+        },
+        () => {
+          const suggestions = fullResponse.split('|||').map(q => q.trim()).filter(q => q);
+          setSuggestedQuestions(suggestions);
+          setIsLoadingSuggestions(false);
+        }
+      );
+    } catch (error) {
+      console.error('Error updating suggested questions:', error);
+      setIsLoadingSuggestions(false);
     }
   };
 
@@ -166,6 +262,25 @@ const PredictionPage = () => {
           </div>
         </div>
         <div className="mb-4">
+          <h3 className="text-lg font-semibold">Suggested Questions:</h3>
+          {isLoadingSuggestions ? (
+            <p>Loading suggestions...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {suggestedQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  className="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-2 px-4 rounded-full text-sm"
+                  onClick={() => handleSuggestedQuestionClick(question)}
+                  type="button"
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mb-4">
           <div className="flex">
             <input
               type="text"
@@ -194,7 +309,8 @@ const PredictionPage = () => {
             type="button"
             className="bg-gray-500 text-white px-4 py-2 rounded"
             onClick={() => {
-              setCurrentQuestionIndex(prevIndex => Math.max(0, prevIndex - 1));
+              saveConversationHistory();
+              navigate(-1);
             }}
           >
             Previous Page
