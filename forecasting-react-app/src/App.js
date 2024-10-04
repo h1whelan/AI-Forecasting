@@ -24,7 +24,7 @@ const GroupRedirect = () => {
       localStorage.setItem('participantId', pid || uuidv4());
       navigate('/', { replace: true });
     }
-  }, [groupId, navigate]);
+  }, [groupId, navigate, location.search]);
 
   return null;
 };
