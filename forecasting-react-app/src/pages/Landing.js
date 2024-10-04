@@ -8,10 +8,11 @@ const Landing = () => {
 
   useEffect(() => {
     const groupId = localStorage.getItem('groupId');
-
+    const participantId = localStorage.getItem('participantId');
+  
     const group = groupId === 'A' || groupId === 'a' ? 'control' : groupId === 'B' || groupId === 'b' ? 'study' : groupId === 'C' || groupId === 'c' ? 'prediction' : 'control';
-    const userId = uuidv4();
-
+    const userId = participantId || uuidv4();
+  
     // Redirect to PredictionPage with group and userId
     navigate('/prediction', { state: { group, userId } });
   }, [location, navigate]);
