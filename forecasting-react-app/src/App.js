@@ -1,5 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Landing from './pages/Landing';
@@ -11,11 +12,16 @@ import ThankYou from './pages/ThankYou';
 const GroupRedirect = () => {
   const navigate = useNavigate();
   const { groupId } = useParams();
+  const location = useLocation();
 
   React.useEffect(() => {
     if (groupId) {
+      const searchParams = new URLSearchParams(location.search);
+      const pid = searchParams.get('pid');
       console.log('GroupRedirect: Setting groupId in localStorage:', groupId);
+      console.log('GroupRedirect: Participant ID:', pid);
       localStorage.setItem('groupId', groupId);
+      localStorage.setItem('participantId', pid || uuidv4());
       navigate('/', { replace: true });
     }
   }, [groupId, navigate]);
