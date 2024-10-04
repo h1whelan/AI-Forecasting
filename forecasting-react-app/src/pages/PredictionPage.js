@@ -21,7 +21,7 @@ const PredictionPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [prediction] = useState('');
   const [confidence] = useState(50);
-  const [baseRate, setBaseRate] = useState('');
+  const [baseRates, setBaseRates] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [aiResponseTime, setAiResponseTime] = useState(null);
@@ -35,6 +35,10 @@ const PredictionPage = () => {
 useEffect(() => {
   setStartTime(Date.now());
   setChatHistory([]); // Always reset chat history when opening a new question
+  setBaseRates(prevBaseRates => ({
+    ...prevBaseRates,
+    [currentQuestionIndex]: ''
+  }));
 }, [currentQuestionIndex]);
 
   // Save conversation history specific to the current question
@@ -60,7 +64,7 @@ useEffect(() => {
         prediction,
         confidence: parseInt(confidence),
         timeTaken,
-        baseRate: finalBaseRate || baseRate, // Use the saved final base rate for study group
+        baseRate: finalBaseRate || baseRates[currentQuestionIndex], // Use the saved base rate for the current question
         aiResponseTime,
         questionCount // Add the number of questions asked by the user
       });
@@ -117,7 +121,10 @@ useEffect(() => {
             } else {
               newHistory.push({ role: 'assistant', content: aiResponse });
             }
-            setBaseRate(fullInput + '\n\nAI: ' + aiResponse)
+            setBaseRates(prevBaseRates => ({
+              ...prevBaseRates,
+              [currentQuestionIndex]: fullInput + '\n\nAI: ' + aiResponse
+            }));
             return newHistory;
           });
         },
@@ -126,11 +133,10 @@ useEffect(() => {
           console.log(`AI response time: ${time} seconds`);
           setIsLoading(false);
           setIsAiResponding(false);
- //         updateSuggestedQuestions(aiResponse);
 
           // If study group and base rate is provided, save it as the final base rate
-          if (group === 'study' && baseRate && !finalBaseRate) {
-            setFinalBaseRate(baseRate);
+          if (group === 'study' && baseRates[currentQuestionIndex] && !finalBaseRate) {
+            setFinalBaseRate(baseRates[currentQuestionIndex]);
           }
         }
       );
