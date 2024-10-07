@@ -17,7 +17,7 @@ const GroupRedirect = () => {
   React.useEffect(() => {
     if (groupId) {
       const searchParams = new URLSearchParams(location.search);
-      const pid = searchParams.get('pid');
+      const pid = searchParams.get('ProlificID');
       console.log('GroupRedirect: Setting groupId in localStorage:', groupId);
       console.log('GroupRedirect: Participant ID:', pid);
       localStorage.setItem('groupId', groupId);
