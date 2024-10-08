@@ -39,6 +39,7 @@ useEffect(() => {
     ...prevBaseRates,
     [currentQuestionIndex]: ''
   }));
+  setAiResponseTime(0); // reset AiResponseTime for new Q
 }, [currentQuestionIndex]);
 
   // Save conversation history specific to the current question
@@ -56,6 +57,11 @@ useEffect(() => {
     const endTime = Date.now();
     const timeTaken = (endTime - startTime) / 1000; // Convert to seconds
 
+    // Convert chatHistory to a string format
+    const fullConversation = chatHistory
+    .map(message => `${message.role.charAt(0).toUpperCase() + message.role.slice(1)}: ${message.content}`)
+    .join('\n\n');
+
     try {
       await submitResponse({
         userId,
@@ -64,7 +70,7 @@ useEffect(() => {
         prediction,
         confidence: parseInt(confidence),
         timeTaken,
-        baseRate: finalBaseRate || baseRates[currentQuestionIndex], // Use the saved base rate for the current question
+        baseRate: fullConversation, // Full conversation recorded
         aiResponseTime,
         questionCount // Add the number of questions asked by the user
       });
@@ -129,8 +135,9 @@ useEffect(() => {
           });
         },
         (time) => {
-          setAiResponseTime(time);
+          setAiResponseTime(prevTime => prevTime + time);
           console.log(`AI response time: ${time} seconds`);
+          console.log(`Cumulative AI response time: ${aiResponseTime + time} seconds`);
           setIsLoading(false);
           setIsAiResponding(false);
 
