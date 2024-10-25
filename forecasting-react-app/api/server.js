@@ -82,7 +82,10 @@ app.get('/api/study-data', async (req, res) => {
     const predictionGroupSize = await Response.distinct('userId', { group: 'prediction' }).then(users => users.length);
 
     const avgsByQuestionAndGroup = await Response.aggregate([
-      { $match: { timeTaken: { $gt: 0 } } },
+      { $match: { 
+        timeTaken: { $gt: 0 },
+        createdAt: { $gte: new Date('2024-10-10T00:00:00.000Z') }
+      }},
       { $group: {
         _id: { question: '$question', group: '$group' },
         avgTimeTaken: { $avg: '$timeTaken' },
