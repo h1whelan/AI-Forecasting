@@ -79,41 +79,38 @@ app.get('/api/study-data', async (req, res) => {
     const totalParticipants = await Response.distinct('userId').then(users => users.length);
     const controlGroupSize = await Response.distinct('userId', { group: 'control' }).then(users => users.length);
     const studyGroupSize = await Response.distinct('userId', { group: 'study' }).then(users => users.length);
+    const predictionGroupSize = await Response.distinct('userId', { group: 'prediction' }).then(users => users.length);
 
-    const avgControlConfidence = await Response.aggregate([
-      { $match: { group: 'control' } },
-      { $group: { _id: '$userId', avgConfidence: { $avg: '$confidence' } } },
-      { $group: { _id: null, avg: { $avg: '$avgConfidence' } } }
+    const avgsByQuestionAndGroup = await Response.aggregate([
+      { $match: { timeTaken: { $gt: 0 } } },
+      { $group: {
+        _id: { question: '$question', group: '$group' },
+        avgTimeTaken: { $avg: '$timeTaken' },
+        avgQuestionCount: { $avg: '$questionCount' },
+        count: { $sum: 1 }
+      }},
+      { $match: { count: { $gt: 10 } } },
+      { $group: {
+        _id: '$_id.question',
+        groups: {
+          $push: {
+            group: '$_id.group',
+            avgTimeTaken: '$avgTimeTaken',
+            avgQuestionCount: '$avgQuestionCount',
+            count: '$count'
+          }
+        }
+      }}
     ]);
 
-    const avgStudyConfidence = await Response.aggregate([
-      { $match: { group: 'study' } },
-      { $group: { _id: '$userId', avgConfidence: { $avg: '$confidence' } } },
-      { $group: { _id: null, avg: { $avg: '$avgConfidence' } } }
-    ]);
-
-    const avgControlTime = await Response.aggregate([
-      { $match: { group: 'control' } },
-      { $group: { _id: '$userId', avgTime: { $avg: '$timeTaken' } } },
-      { $group: { _id: null, avg: { $avg: '$avgTime' } } }
-    ]);
-
-    const avgStudyTime = await Response.aggregate([
-      { $match: { group: 'study' } },
-      { $group: { _id: '$userId', avgTime: { $avg: '$timeTaken' } } },
-      { $group: { _id: null, avg: { $avg: '$avgTime' } } }
-    ]);
-
-    const recentResponses = await Response.find().sort('-createdAt').limit(10);
+    const recentResponses = await Response.find({ timeTaken: { $gt: 0 } }).sort('-createdAt').limit(20);
 
     res.json({
       totalParticipants,
       controlGroupSize,
       studyGroupSize,
-      avgControlConfidence: avgControlConfidence[0]?.avg || 0,
-      avgStudyConfidence: avgStudyConfidence[0]?.avg || 0,
-      avgControlTime: avgControlTime[0]?.avg || 0,
-      avgStudyTime: avgStudyTime[0]?.avg || 0,
+      predictionGroupSize,
+      avgsByQuestionAndGroup,
       recentResponses
     });
   } catch (error) {
