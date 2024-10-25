@@ -42,7 +42,7 @@ const AdminDashboard = () => {
 
     const labels = studyData.avgsByQuestionAndGroup.map(item => {
       // Truncate labels to first 20 characters
-      return item._id.length > 20 ? item._id.substring(0, 20) + '...' : item._id;
+      return item._id.length > 20 ? item._id.substring(0, 25) + '...' : item._id;
     });
     const datasets = ['control', 'study', 'prediction'].map(groupName => ({
       label: groupName,
